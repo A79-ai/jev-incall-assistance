@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "Turn": {
+      "additionalProperties": false,
+      "properties": {
+        "turn_id": {
+          "pattern": "^[A-Za-z0-9_-]{1,80}$",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "speaker_role": {
+          "default": "buyer",
+          "enum": [
+            "buyer",
+            "seller",
+            "participant"
+          ],
+          "title": "Speaker Role",
+          "type": "string"
+        },
+        "start_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "final": {
+          "default": true,
+          "title": "Final",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "turn_id",
+        "text"
+      ],
+      "title": "Turn",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "meeting_id": {
+      "pattern": "^[A-Za-z0-9_-]{1,80}$",
+      "title": "Meeting Id",
+      "type": "string"
+    },
+    "transcript_version": {
+      "minimum": 0,
+      "title": "Transcript Version",
+      "type": "integer"
+    },
+    "turns": {
+      "items": {
+        "$ref": "#/$defs/Turn"
+      },
+      "maxItems": 2000,
+      "title": "Turns",
+      "type": "array"
+    }
+  },
+  "required": [
+    "meeting_id",
+    "transcript_version",
+    "turns"
+  ],
+  "title": "Snapshot",
+  "type": "object"
+}

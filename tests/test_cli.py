@@ -1,0 +1,58 @@
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(*args):
+    env = {k: v for k, v in os.environ.items() if k != "TYPESAFE_API_KEY"}
+    return subprocess.run(
+        [sys.executable, "-m", "jev_incall.cli", *args],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+
+
+def test_dry_run_does_not_require_credentials():
+    r = run("evaluate", "examples/snapshot.json", "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert len(json.loads(r.stdout)["questions"]) == 8
+
+
+def test_missing_key_is_actionable():
+    r = run("evaluate", "examples/snapshot.json")
+    assert r.returncode == 1 and "TYPESAFE_API_KEY" in r.stderr
+
+
+def test_scripted_evaluate():
+    r = run("evaluate", "examples/snapshot.json", "--mock")
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["answers"]["metrics"]["choice"] == "supported"
+
+
+def test_replay_finishes_last_version():
+    r = run(
+        "replay", "examples/meeting.jsonl", "--mock", "--turn-delay", "0.01", "--interval", "0.02"
+    )
+    assert r.returncode == 0, r.stderr
+    decoder = json.JSONDecoder()
+    rest, records = r.stdout.strip(), []
+    while rest:
+        record, offset = decoder.raw_decode(rest)
+        records.append(record)
+        rest = rest[offset:].lstrip()
+    assert records[-1]["evaluated_version"] == 8
+    assert records[-1]["coverage"] == 1
+
+
+def test_cost_command():
+    r = run("cost")
+    assert r.returncode == 0
+    assert json.loads(r.stdout)["calls"] == 900

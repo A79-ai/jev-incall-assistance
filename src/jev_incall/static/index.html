@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Live in-call assistance · Ampup</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><main>
+<header><div><p class="eyebrow">AMPUP TEAM / REFERENCE IMPLEMENTATION</p><h1>Live in-call assistance</h1><p>Turn a conversation into a set of decisions while it’s still happening.</p></div><span id="mode" class="badge">Connecting…</span></header>
+<section class="toolbar" aria-label="Meeting controls"><label>Framework <select id="framework"><option value="meddpicc">MEDDPICC · 8 fields</option><option value="bant">BANT · 4 fields</option><option value="sentiment">Sentiment</option></select></label><button id="new">New meeting</button><button id="demo" class="secondary">Replay sample call</button><button id="close" class="secondary">Close meeting</button></section>
+<p id="notice" class="notice">Loading configuration…</p><p id="error" role="alert"></p>
+<section class="stats"><div><span>Coverage</span><strong id="coverage">—</strong></div><div><span>Transcript / evaluated</span><strong id="version">0 / 0</strong></div><div><span>API attempts</span><strong id="attempts">0</strong></div><div><span>Last latency</span><strong id="latency">—</strong></div></section>
+<div class="section-heading"><h2>Live signals</h2><span id="status" role="status">Start a meeting</span></div><section id="fields" class="fields" aria-label="Classification fields"></section>
+<p class="hint">Support score = P(supported). Confidence describes the answer distribution. Coverage counts supported fields; it is not a forecast of winning the deal.</p>
+<section class="transcript"><div class="section-heading"><h2>Transcript</h2><span id="meeting-id"></span></div><div id="turns" class="turns"><p>No transcript yet.</p></div>
+<form id="turn-form"><label>Speaker <select id="role"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="participant">Participant</option></select></label><label class="grow">Finalized turn <textarea id="text" required maxlength="12000" placeholder="Paste a finalized transcript turn…"></textarea></label><button type="submit">Add turn</button></form></section>
+<footer>Transcript ingestion and a local panel · Jev powers the live mode · <a href="/docs">API reference</a></footer>
+</main></body></html>

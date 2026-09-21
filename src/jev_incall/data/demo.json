@@ -1,0 +1,66 @@
+[
+  {
+    "turn_id": "t001",
+    "speaker_role": "buyer",
+    "start_ms": 0,
+    "text": "Our reporting takes 20 hours each week. We want to cut that in half.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t002",
+    "speaker_role": "buyer",
+    "start_ms": 5000,
+    "text": "Manual reporting makes us miss our weekly inventory decisions, so we keep overstocking.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t003",
+    "speaker_role": "buyer",
+    "start_ms": 10000,
+    "text": "Priya, our CFO, has final authority to approve this purchase.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t004",
+    "speaker_role": "buyer",
+    "start_ms": 15000,
+    "text": "The solution must integrate with Salesforce and support single sign-on.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t005",
+    "speaker_role": "buyer",
+    "start_ms": 20000,
+    "text": "Operations will run a pilot next week. If it passes, Priya will make the final purchase decision on October 15.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t006",
+    "speaker_role": "buyer",
+    "start_ms": 25000,
+    "text": "After approval, legal reviews the contract, security signs off, and procurement issues the order, in that order.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t007",
+    "speaker_role": "buyer",
+    "start_ms": 30000,
+    "text": "I lead operations and sit on the buying committee. I have already made the business case to Priya and scheduled the stakeholder review.",
+    "revision": 1,
+    "final": true
+  },
+  {
+    "turn_id": "t008",
+    "speaker_role": "buyer",
+    "start_ms": 35000,
+    "text": "We are comparing Acme Analytics, an internal build, and keeping our current process.",
+    "revision": 1,
+    "final": true
+  }
+]
