@@ -9,6 +9,7 @@ async function api(path, method = "GET", body) {
 }
 function node(tag, text, cls) { const el = document.createElement(tag); if (text != null) el.textContent = text; if (cls) el.className = cls; return el; }
 function render(state) {
+  if (state.framework) $("framework").value = state.framework;
   $("coverage").textContent = pct(state.coverage);
   $("version").textContent = `${state.transcript_version} / ${state.evaluated_version}`;
   $("attempts").textContent = state.attempts;
@@ -41,7 +42,7 @@ async function newMeeting() {
     const old = meetingId; meetingId = null;
     if (old) await api(`/api/meetings/${old}`, "DELETE");
     const state = await api("/api/meetings", "POST", {framework: $("framework").value});
-    meetingId = state.meeting_id; render(state);
+    meetingId = state.meeting_id; history.replaceState(null, "", `?meeting=${encodeURIComponent(meetingId)}`); render(state);
   } finally { busy = false; }
 }
 async function poll() {
@@ -57,6 +58,7 @@ $("close").onclick = action(async () => {
   replayToken++;
   const id = meetingId; meetingId = null;
   if (id) await api(`/api/meetings/${id}`, "DELETE");
+  history.replaceState(null, "", location.pathname);
   $("status").textContent = "Meeting closed · no further evaluations";
 });
 $("turn-form").onsubmit = action(async (event) => {
@@ -80,7 +82,12 @@ async function init() {
   config = await api("/api/config");
   $("mode").textContent = config.mock ? "SCRIPTED DEMO · NO API CALLS" : `LIVE · ${config.model}`;
   $("notice").textContent = config.mock ? "Sample replay uses canned scores for exact sample sentences. Custom text is not classified in demo mode. No transcript leaves this server." : `Live mode sends transcript text to TypeSafe. Evaluation tick: ${config.interval_seconds}s. Sample replay also makes paid API calls.`;
-  await newMeeting(); await poll();
+  const requested = new URLSearchParams(location.search).get("meeting");
+  if (requested) {
+    const state = await api(`/api/meetings/${encodeURIComponent(requested)}`);
+    meetingId = state.meeting_id; render(state);
+  } else { await newMeeting(); }
+  await poll();
 }
 init().catch((error) => { $("error").textContent = error.message; });
 window.addEventListener("pagehide", () => clearTimeout(pollTimer));

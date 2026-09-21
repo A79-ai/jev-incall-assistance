@@ -237,6 +237,7 @@ def test_local_api_lifecycle_validation_and_origin():
         assert c.get("/openapi.json").status_code == 200
         assert c.get("/api/config").json()["mock"] is True
         state = c.post("/api/meetings", json={}).json()
+        assert state["framework"] == "meddpicc"
         mid = state["meeting_id"]
         endpoint = f"/api/meetings/{mid}"
         payload = demo_turns()[0]

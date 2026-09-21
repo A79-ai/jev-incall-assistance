@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{name = "Ampup Team"}]
-dependencies = ["fastapi>=0.115,<1", "httpx>=0.28,<1", "uvicorn>=0.34,<1"]
+dependencies = ["fastapi>=0.115,<1", "httpx>=0.28,<1", "uvicorn>=0.34,<1", "websockets>=15,<17"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]

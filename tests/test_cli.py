@@ -56,3 +56,19 @@ def test_cost_command():
     r = run("cost")
     assert r.returncode == 0
     assert json.loads(r.stdout)["calls"] == 900
+
+
+def test_meet_config_without_accounts():
+    r = run(
+        "meet-config",
+        "--meeting-url",
+        "https://meet.google.com/abc-defg-hij",
+        "--webhook-base",
+        "https://example.ngrok.app",
+        "--meeting-id",
+        "test-meeting",
+    )
+    assert r.returncode == 0, r.stderr
+    body = json.loads(r.stdout)
+    assert body["metadata"]["jev_meeting_id"] == "test-meeting"
+    assert body["recording_config"]["realtime_endpoints"][0]["events"] == ["transcript.data"]

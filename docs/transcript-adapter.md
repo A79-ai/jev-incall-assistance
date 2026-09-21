@@ -1,5 +1,7 @@
 # Connect a transcript source
 
+For complete runnable integrations, see the [webhook/WebSocket quick start](streaming-and-webhooks.md) and [Google Meet quick start](google-meet.md). The routes below are the private local control API.
+
 Use any speech-to-text provider that supplies finalized text and speaker information. The adapter translates its events into the `Turn` schema; the repo does not depend on a particular audio SDK.
 
 Start `jev-incall serve --mock` for integration development or `jev-incall serve` for real classification. On macOS/Linux:

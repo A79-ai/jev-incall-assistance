@@ -2,6 +2,24 @@
 
 The unit of work is a meeting, not a turn. Each meeting owns its transcript, question map, worker, last evaluated version, last response, and error state. The Python evaluator is shared so HTTP connections can be reused.
 
+External events enter a separate gateway process on port 8001. Generic webhook and WebSocket senders authenticate with a bearer token; Recall uses its HMAC-signed envelope. A gateway is configured for one local meeting and forwards accepted Turns to the private dashboard API on port 8000. It has no transcript reads or meeting administration endpoints. The local dashboard supports `?meeting=ID` to attach to that meeting, and `/api/meetings/{id}/events` streams full state snapshots through SSE.
+
+```mermaid
+flowchart LR
+    Meet[Google Meet] --> Recall[Recall bot + transcription]
+    Recall --> Signed[Signed Recall webhook]
+    Source[Your transcript source] --> Generic[Bearer webhook or WebSocket]
+    Signed --> Gateway[Gateway :8001]
+    Generic --> Gateway
+    Gateway --> Local[Private meeting API :8000]
+    Local --> Worker[Two-second worker]
+    Worker --> Jev
+    Jev --> Scores[Validated scores]
+    Scores --> Panel[Dashboard or SSE consumer]
+```
+
+See the [ingestion quick start](streaming-and-webhooks.md) for delivery, retry, and restart behavior.
+
 ## Scheduling
 
 `Meeting.run()` uses a monotonic two-second tick. An unchanged or empty transcript does nothing. On a changed version, it copies the transcript and waits for one evaluation to finish. If the response is slow, missed ticks are skipped; at the next future tick the worker takes the newest transcript. There is no request backlog and no concurrent evaluation for one meeting.
@@ -54,6 +72,6 @@ The provider's confidence is kept intact. No arbitrary confidence threshold is p
 
 A new meeting creates one worker; deleting it cancels the worker and removes the transcript. A shutdown cancels all workers and closes the HTTP client. Closing a browser tab does not delete the server-side meeting; use Close meeting or the DELETE route. Unchanged meetings are idle and make no calls.
 
-Run one Uvicorn process. The in-memory map is not shared across workers or machines. Host and Origin checks restrict the reference server to local use; there is no user authentication. No external JavaScript or analytics are loaded. User transcript text is inserted into the panel as text, not HTML.
+Run one Uvicorn process. The in-memory map is not shared across workers or machines. Host and Origin checks restrict the reference server to local use; there is no user authentication. The dashboard loads no external JavaScript or analytics; the optional FastAPI documentation UI uses CDN assets. User transcript text is inserted into the panel as text, not HTML.
 
-A production adapter should explicitly map participants to roles, assign stable turn IDs/revisions, authenticate ingestion, and set a retention policy. Add durable state, per-tenant limits, metrics, and deployment-specific secrets handling before sharing the server. Do not expose this localhost demo by simply forwarding its port.
+A production adapter should explicitly map participants to roles, assign stable turn IDs/revisions, authenticate ingestion, and set a retention policy. Add durable state, per-tenant limits, metrics, and deployment-specific secrets handling before sharing the server. Keep port 8000 private. For the documented development tunnel, forward only the authenticated gateway on port 8001. A production deployment also needs ingress rate limits and durable delivery/state; the gateway is a standalone development example.

@@ -1,5 +1,7 @@
 """Local reference API and dashboard. Run a single process on loopback."""
 
+import asyncio
+import json
 import math
 import uuid
 from contextlib import asynccontextmanager
@@ -7,7 +9,7 @@ from importlib.resources import files
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 from .demo import demo_turns
 from .engine import Meeting
@@ -102,6 +104,7 @@ def create_app(evaluator, interval=2.0, mock=False):
             evaluator,
             interval=interval,
             window_turns=12 if body.framework == "sentiment" else None,
+            framework=body.framework,
         )
         meetings[meeting_id] = meeting
         meeting.start()
@@ -110,6 +113,30 @@ def create_app(evaluator, interval=2.0, mock=False):
     @app.get("/api/meetings/{meeting_id}")
     async def state(meeting_id: str):
         return get_meeting(meeting_id).view()
+
+    @app.get("/api/meetings/{meeting_id}/events")
+    async def events(meeting_id: str):
+        meeting = get_meeting(meeting_id)
+
+        async def stream_state():
+            last = None
+            heartbeat = 0
+            while meetings.get(meeting_id) is meeting:
+                state = json.dumps(meeting.view(), separators=(",", ":"), allow_nan=False)
+                if state != last:
+                    yield f"event: state\ndata: {state}\n\n"
+                    last = state
+                    heartbeat = 0
+                elif heartbeat >= 60:
+                    yield ": keepalive\n\n"
+                    heartbeat = 0
+                heartbeat += 1
+                await asyncio.sleep(0.25)
+            yield "event: closed\ndata: {}\n\n"
+
+        return StreamingResponse(
+            stream_state(), media_type="text/event-stream", headers={"X-Accel-Buffering": "no"}
+        )
 
     @app.post("/api/meetings/{meeting_id}/turns")
     async def upsert(meeting_id: str, turn: Turn):

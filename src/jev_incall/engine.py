@@ -14,9 +14,17 @@ MAX_TRANSCRIPT_CHARS = 80000  # A payload guard, not a tokenizer/context guarant
 
 class Meeting:
     def __init__(
-        self, meeting_id, questions, evaluator, interval=2.0, retry_base=2.0, window_turns=None
+        self,
+        meeting_id,
+        questions,
+        evaluator,
+        interval=2.0,
+        retry_base=2.0,
+        window_turns=None,
+        framework=None,
     ):
         self.meeting_id = meeting_id
+        self.framework = framework
         self.questions = copy.deepcopy(questions)
         self.evaluator = evaluator
         if not math.isfinite(interval) or interval <= 0:
@@ -161,6 +169,7 @@ class Meeting:
             "latency_ms": self.latency_ms,
             "fields": fields,
             "field_names": list(self.questions),
+            "framework": self.framework,
             "coverage": supported / len(self.questions) if answers and qualification else None,
             "attempts": self.attempts,
             "successful_evaluations": self.successes,

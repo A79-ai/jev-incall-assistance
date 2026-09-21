@@ -114,6 +114,22 @@ def main():
     for cmd in (once, play):
         cmd.add_argument("--framework", choices=FRAMEWORKS, default="meddpicc")
         cmd.add_argument("--questions", type=Path, help="Custom choice-question JSON map")
+    gateway = sub.add_parser(
+        "gateway", help="Authenticated webhook/WebSocket ingress for one meeting"
+    )
+    gateway.add_argument("--meeting-id", required=True)
+    gateway.add_argument("--api-url", default="http://127.0.0.1:8000")
+    gateway.add_argument("--port", type=int, default=8001)
+    gateway.add_argument("--roles", type=Path, help="Recall participant ID/name to role JSON map")
+    send = sub.add_parser("send", help="Send JSONL events to a running gateway; use - for stdin")
+    send.add_argument("input")
+    send.add_argument("--transport", choices=("webhook", "websocket"), default="webhook")
+    send.add_argument("--url", help="Defaults to the matching endpoint on 127.0.0.1:8001")
+    send.add_argument("--delay", type=positive, default=1.0)
+    meet = sub.add_parser("meet-config", help="Print a Google Meet bot request; makes no API calls")
+    meet.add_argument("--meeting-url", required=True)
+    meet.add_argument("--webhook-base", required=True)
+    meet.add_argument("--meeting-id", required=True)
     cost = sub.add_parser("cost", help="Estimate cumulative transcript input cost")
     cost.add_argument("--minutes", type=positive, default=30.0)
     cost.add_argument("--interval", type=positive, default=2.0)
@@ -132,6 +148,40 @@ def main():
                 host="127.0.0.1",
                 port=args.port,
             )
+        elif args.command == "gateway":
+            import uvicorn
+
+            from .gateway import create_gateway
+
+            app = create_gateway(
+                args.meeting_id,
+                api_url=args.api_url,
+                token=os.environ.get("JEV_INGEST_TOKEN", ""),
+                recall_secret=os.environ.get("RECALL_WEBHOOK_SECRET", ""),
+                roles=json.loads(args.roles.read_text()) if args.roles else {},
+            )
+            uvicorn.run(app, host="127.0.0.1", port=args.port, ws_max_size=262144)
+        elif args.command == "send":
+            from .transports import send_turns
+
+            url = args.url or (
+                "http://127.0.0.1:8001/webhooks/transcript"
+                if args.transport == "webhook"
+                else "ws://127.0.0.1:8001/stream"
+            )
+            asyncio.run(
+                send_turns(
+                    args.input,
+                    url,
+                    os.environ.get("JEV_INGEST_TOKEN", ""),
+                    args.transport,
+                    args.delay,
+                )
+            )
+        elif args.command == "meet-config":
+            from .meet import bot_request
+
+            print_json(bot_request(args.meeting_url, args.webhook_base, args.meeting_id))
         elif args.command == "evaluate":
             asyncio.run(evaluate_once(args))
         elif args.command == "replay":

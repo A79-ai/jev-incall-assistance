@@ -17,5 +17,6 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+      - run: python scripts/smoke.py
       - run: jev-incall evaluate examples/snapshot.json --dry-run
       - run: jev-incall cost

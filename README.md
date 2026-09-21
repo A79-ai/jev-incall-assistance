@@ -23,6 +23,23 @@ Open **http://127.0.0.1:8000** and click **Replay sample call**. Over about 20 s
 
 **Mock mode is a scripted UI fixture, not Jev inference.** It recognizes only the bundled sample sentences and returns canned probabilities. Custom text is not meaningfully classified. It needs no key, makes no external calls, and incurs no model charges.
 
+## Connect a real source
+
+| Input | Start here |
+| --- | --- |
+| Google Meet call | [Meet bot quick start](docs/google-meet.md): Recall capture/transcription → signed webhook → Jev. |
+| Transcript webhook | [Webhook quick start](docs/streaming-and-webhooks.md#path-a-webhook): authenticated POST with one finalized turn. |
+| Streaming transcript | [WebSocket quick start](docs/streaming-and-webhooks.md#path-b-websocket-input): one turn per frame, acknowledgement per event. |
+| Live scores for your app | [SSE output](docs/streaming-and-webhooks.md#path-c-stream-scores-out): current state followed by updates. |
+
+Verify the standalone integration without any API keys:
+
+```bash
+python scripts/smoke.py
+```
+
+This launches real local servers, exercises both sender commands and signed Google Meet adapter fixtures, checks final scores over SSE, and cleans up. The normal install includes everything it needs. For a real Meet call you also need a Recall account and an HTTPS tunnel; those services are separate from Jev.
+
 ## Use Jev
 
 Get an API key from [TypeSafe](https://docs.typesafe.ai/). Stop the mock server, then run:
@@ -118,7 +135,7 @@ pytest -q
 
 If you use [uv](https://docs.astral.sh/uv/), `uv sync --extra dev --locked` installs the checked-in lockfile. Run commands with `uv run`.
 
-Tests run offline with synthetic transcripts and HTTP mocks. They exercise response validation, revisions, coalescing during slow calls, retries, fatal errors, shutdown, API lifecycle, CLI behavior, and cost math. CI runs Python 3.11–3.13. They do not establish model accuracy; replay representative labeled calls to evaluate your rubric before relying on its signals.
+Tests run offline with synthetic transcripts and HTTP mocks. They exercise response validation, revisions, coalescing during slow calls, retries, fatal errors, shutdown, API lifecycle, CLI behavior, and cost math. CI runs Python 3.11–3.13, including the real-socket smoke check. They do not establish model accuracy; replay representative labeled calls to evaluate your rubric before relying on its signals.
 
 ## Repository map
 
@@ -127,19 +144,23 @@ src/jev_incall/
   client.py          Direct Jev HTTP adapter and response validation
   engine.py          Per-meeting scheduling and versioned transcript state
   server.py          Local REST API and dashboard
-  cli.py             serve, evaluate, replay, cost
+  cli.py             serve, gateway, send, meet-config, evaluate, replay, cost
+  gateway.py         Authenticated ingress; signed Recall event adapter
+  transports.py      Webhook/WebSocket senders (JSONL or stdin)
+  meet.py            Google Meet bot request builder
   prompts/           MEDDPICC, BANT, sentiment question maps
   static/            Dashboard (plain HTML, CSS, JavaScript)
   data/              Synthetic sample call and scripted demo labels
 examples/            Snapshot, JSONL stream, correction event
 schemas/             Transcript event and snapshot schemas
 docs/                Architecture, transcript adapter, prompts, cost
-tests/              Offline automated checks
+scripts/smoke.py     No-key end-to-end transport check
+tests/               Offline automated checks
 ```
 
 ## Scope
 
-This repo starts with **text from your transcription provider**. It does not join calls, capture audio, or implement speech recognition. The server stores meetings in memory and has no accounts or persistent history. It is a local reference app, not an internet-facing service. For deployment, add authentication, tenant isolation, durable storage, retention controls, and a shared worker architecture. API docs are at `/docs` when running locally.
+This repo starts with **text from your transcription provider**. It does not join calls, capture audio, or implement speech recognition. The optional Google Meet integration uses a Recall bot to supply that text. The server stores meetings in memory and has no accounts or persistent history. It is a local reference app, not an internet-facing service. For deployment, add authentication, tenant isolation, durable storage, retention controls, and a shared worker architecture. API docs are at `/docs` when running locally.
 
 Provider references: [HTTP API](https://docs.typesafe.ai/api) · [models and limits](https://docs.typesafe.ai/models) · [confidence](https://docs.typesafe.ai/confidence).
 
