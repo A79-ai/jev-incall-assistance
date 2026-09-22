@@ -2,7 +2,7 @@
 
 **By Ampup Team** · Sales calls and MEDDPICC as a worked example
 
-A small, runnable reference implementation that turns a live transcript into signals a rep can act on while the call is still going. Every two seconds, if the transcript changed, it sends the whole transcript plus a fixed set of questions to [Jev](https://docs.typesafe.ai/models) in one request, and paints the answers on a local dashboard: a label, a probability for every allowed label, a confidence, and an overall coverage number.
+**This is an example implementation to build on, not a standalone product.** It shows how to put live in-call assistance on Jev so you can lift the pattern into your own service. It turns a live transcript into signals a rep can act on while the call is still going. Every two seconds, if the transcript changed, it sends the whole transcript plus a fixed set of questions to [Jev](https://docs.typesafe.ai/models) in one request, and paints the answers on a local dashboard: a label, a probability for every allowed label, a confidence, and an overall coverage number.
 
 MEDDPICC is the worked example: **eight questions × three labels** (unknown, supported, contradicted). BANT and sentiment maps are included so you can see how the same loop serves other structured assistance.
 
@@ -10,7 +10,10 @@ MEDDPICC is the worked example: **eight questions × three labels** (unknown, su
 
 1. **Python 3.11 or newer.** Nothing else to install system-wide.
 2. **A TypeSafe API key.** Jev is TypeSafe's classifier. Get a key at [docs.typesafe.ai](https://docs.typesafe.ai/). **There is no offline or mock mode.** Every score you see is a real Jev answer. Scoring the bundled sample call costs a fraction of a cent; a 30-minute call is roughly $0.17 ([napkin math](#what-it-costs)).
-3. **A transcript source, when you move past the sample.** This repo starts from *text*. It does not join calls, record audio, or do speech-to-text. You connect a transcript through one of the included adapters (Google Meet via a Recall bot, a webhook, or a WebSocket stream), or write your own against a six-field event schema.
+3. **A transcript source, when you move past the sample.** Jev scores a transcript; it does not produce one. This repo starts from *text* and does not join calls, record audio, or do speech-to-text. You connect a transcript through one of the included adapters (Google Meet via a Recall bot, a webhook, or a WebSocket stream), or write your own against a six-field event schema.
+4. **A speaker role map, if you use MEDDPICC.** Its questions ask for buyer evidence, so every turn must arrive labeled `buyer`, `seller`, or `participant`, or the scores are noise.
+
+Items 3 and 4 are the real setup cost, and they are external services and your own data rather than anything this repo installs.
 
 If you only want to read the exact request the app sends, `jev-incall evaluate examples/snapshot.json --dry-run` prints it without a key or a network call.
 
@@ -160,7 +163,7 @@ tests/               Offline automated checks and the Jev stand-in
 
 ## Scope
 
-This repo starts with **text from your transcription provider**. It does not join calls, capture audio, or implement speech recognition; the Google Meet route does that through a Recall bot. The server keeps meetings in memory and has no accounts or history. It is a local reference app, not an internet-facing service. For deployment you would add authentication, tenant isolation, durable storage, retention controls, and a shared worker architecture. API docs are served at `/docs` while the server runs.
+This is written for engineers building something similar, not for end users on a call. It starts with **text from your transcription provider**. It does not join calls, capture audio, or implement speech recognition; the Google Meet route does that through a Recall bot. The server keeps meetings in memory and has no accounts or history. It is a local reference app, not an internet-facing service. For deployment you would add authentication, tenant isolation, durable storage, retention controls, and a shared worker architecture. API docs are served at `/docs` while the server runs.
 
 Provider references: [HTTP API](https://docs.typesafe.ai/api) · [models and pricing](https://docs.typesafe.ai/models) · [confidence](https://docs.typesafe.ai/confidence).
 
