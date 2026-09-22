@@ -5,14 +5,15 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from fake_jev import FakeEvaluator
 from fastapi.testclient import TestClient
 
 from jev_incall.client import EvaluationError, JevClient, validate_result
 from jev_incall.cost import estimate
-from jev_incall.demo import DemoEvaluator, demo_turns
 from jev_incall.engine import Meeting
 from jev_incall.models import Turn
 from jev_incall.questions import load_questions
+from jev_incall.sample import sample_turns
 from jev_incall.server import create_app
 
 
@@ -22,7 +23,7 @@ def turn(text="Original", revision=1, final=True):
 
 @pytest.fixture
 async def response():
-    return await DemoEvaluator().evaluate({"turns": demo_turns()}, load_questions())
+    return await FakeEvaluator().evaluate({"turns": sample_turns()}, load_questions())
 
 
 @pytest.mark.parametrize("framework,count", [("meddpicc", 8), ("bant", 4), ("sentiment", 1)])
@@ -33,7 +34,7 @@ def test_prompt_maps(framework, count):
 
 
 def test_duplicate_partial_stale_and_correction():
-    m = Meeting("m", load_questions(), DemoEvaluator())
+    m = Meeting("m", load_questions(), FakeEvaluator())
     assert not m.upsert(turn(final=False))
     assert m.version == 0
     assert m.upsert(turn())
@@ -141,7 +142,7 @@ async def test_close_cancels_inflight_work():
 
 
 def test_transcript_order_and_recent_window():
-    m = Meeting("m", load_questions("sentiment"), DemoEvaluator(), window_turns=2)
+    m = Meeting("m", load_questions("sentiment"), FakeEvaluator(), window_turns=2)
     for i in [3, 1, 2]:
         m.upsert(Turn(turn_id=f"t{i}", text=str(i), start_ms=i))
     assert [t["text"] for t in m.snapshot()["turns"]] == ["1", "2", "3"]
@@ -186,7 +187,7 @@ async def test_direct_request_sends_one_shared_state(response):
 
     c = JevClient("test-key", transport=httpx.MockTransport(handler))
     try:
-        await c.evaluate({"turns": demo_turns()}, load_questions())
+        await c.evaluate({"turns": sample_turns()}, load_questions())
     finally:
         await c.aclose()
     assert len(requests) == 1
@@ -227,7 +228,7 @@ def test_cost_cumulative_input_and_interval():
 
 
 def test_local_api_lifecycle_validation_and_origin():
-    with TestClient(create_app(DemoEvaluator(), interval=100, mock=True)) as c:
+    with TestClient(create_app(FakeEvaluator(), interval=100)) as c:
         assert c.get("/").status_code == 200
         assert c.get("/app.js").status_code == 200
         assert "unsafe-inline" not in c.get("/").headers["content-security-policy"]
@@ -235,12 +236,13 @@ def test_local_api_lifecycle_validation_and_origin():
         assert docs.status_code == 200
         assert "https://cdn.jsdelivr.net" in docs.headers["content-security-policy"]
         assert c.get("/openapi.json").status_code == 200
-        assert c.get("/api/config").json()["mock"] is True
+        assert c.get("/api/config").json()["model"] == "fake-jev"
+        assert len(c.get("/api/sample-call").json()) == 8
         state = c.post("/api/meetings", json={}).json()
         assert state["framework"] == "meddpicc"
         mid = state["meeting_id"]
         endpoint = f"/api/meetings/{mid}"
-        payload = demo_turns()[0]
+        payload = sample_turns()[0]
         assert c.post(endpoint + "/turns", json=payload).json()["changed"]
         assert not c.post(endpoint + "/turns", json=payload).json()["changed"]
         assert c.post(endpoint + "/turns", json={**payload, "text": "conflict"}).status_code == 409
@@ -256,7 +258,7 @@ def test_local_api_lifecycle_validation_and_origin():
 
 
 async def test_unknown_confidence_does_not_create_coverage():
-    client = DemoEvaluator()
+    client = FakeEvaluator(choice="unknown")
     m = Meeting("m", load_questions(), client)
     m.upsert(turn("A greeting"))
     await m.tick()

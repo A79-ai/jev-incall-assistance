@@ -2,7 +2,7 @@
 
 The standalone example runs two small processes: the dashboard and Jev worker on **8000**, and an authenticated ingestion gateway on **8001**. A gateway is bound to one meeting. It cannot create meetings or read transcript history. Your transcription service supplies text; these endpoints do not accept audio.
 
-## Verify everything locally, without accounts
+## Verify the wiring locally, without accounts
 
 After the README installation steps:
 
@@ -10,17 +10,18 @@ After the README installation steps:
 python scripts/smoke.py
 ```
 
-This starts both servers on available loopback ports, runs the actual webhook and WebSocket CLI senders, delivers signed Recall fixtures, verifies final scores through SSE, tests duplicate delivery, and shuts everything down. Expected output starts with `PASS:`. The classifier and Recall events are synthetic, so this verifies wiring rather than model accuracy or a real meeting bot.
+This starts both servers on available loopback ports, runs the actual webhook and WebSocket CLI senders, delivers signed Recall fixtures, verifies final scores through SSE, tests duplicate delivery, and shuts everything down. Expected output starts with `PASS:`. The script stands in for the Jev API with a local server and uses synthetic Recall events, so it verifies wiring rather than classification or a real meeting bot.
 
 ## Start the dashboard
 
 In terminal 1, activate the environment and run:
 
 ```bash
-jev-incall serve --mock
+export TYPESAFE_API_KEY='your-typesafe-api-key'
+jev-incall serve
 ```
 
-For real classification, export `TYPESAFE_API_KEY` and omit `--mock`.
+Every evaluation from here on is a real Jev call.
 
 ## Bind a gateway to a meeting
 

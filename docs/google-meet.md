@@ -15,7 +15,7 @@ python -m pip install -e .
 python scripts/smoke.py
 ```
 
-The smoke check needs no credentials, uses actual local HTTP/WebSocket connections and signed synthetic Recall payloads, and exits after verifying the final scores. It does not join a real meeting.
+The smoke check needs no accounts. It runs the real local HTTP/WebSocket servers and signed synthetic Recall payloads against a local stand-in for the Jev API, then exits after verifying the final scores. It proves the wiring, not classification, and it does not join a real meeting.
 
 ## 2. Start Jev and create the local meeting
 
@@ -25,8 +25,6 @@ In terminal 1:
 export TYPESAFE_API_KEY='your-typesafe-api-key'
 jev-incall serve
 ```
-
-Use `serve --mock` to inspect ingestion without Jev charges; custom speech will not get meaningful scores in that mode.
 
 In terminal 2, activate the environment, then:
 
@@ -135,7 +133,7 @@ Stop the gateway, tunnel, and dashboard with Ctrl+C in their terminals. Removing
 | Webhook 404 | The target local meeting was deleted or the dashboard restarted. |
 | Webhook 409 | Conflicting finalized utterance or meeting limits. Inspect the transcript and source event. |
 | Webhook 422 | Unsupported provider envelope. This adapter accepts `transcript.data`, not arbitrary recording/status callbacks. |
-| Transcript arrives, fields remain unknown | Speaker role map, explicit buyer evidence, and whether the server is in scripted `--mock` mode. |
+| Transcript arrives, fields remain unknown | Speaker role map (unmapped speakers are `participant`, and MEDDPICC only counts buyer evidence) and whether the statements are explicit enough for the rubric. |
 | Transcript arrives, scores stop updating | Dashboard's sanitized Jev error, API key, or model limits. |
 
 Only real-time transcript delivery is configured here. Recall's separate artifact/status webhook subscriptions use another event schema; monitor the Recall dashboard for bot and transcription failures. The test suite covers signed fixtures and local delivery, not your account's Meet admission policy, billing, or a real provider call.
