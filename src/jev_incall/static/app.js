@@ -71,7 +71,7 @@ $("turn-form").onsubmit = action(async (event) => {
 $("demo").onclick = action(async () => {
   $("framework").value = "meddpicc"; await newMeeting();
   const token = ++replayToken, id = meetingId;
-  const turns = await api("/api/demo");
+  const turns = await api("/api/sample-call");
   for (const turn of turns) {
     if (token !== replayToken || id !== meetingId) return;
     await api(`/api/meetings/${id}/turns`, "POST", turn);
@@ -80,8 +80,8 @@ $("demo").onclick = action(async () => {
 });
 async function init() {
   config = await api("/api/config");
-  $("mode").textContent = config.mock ? "SCRIPTED DEMO · NO API CALLS" : `LIVE · ${config.model}`;
-  $("notice").textContent = config.mock ? "Sample replay uses canned scores for exact sample sentences. Custom text is not classified in demo mode. No transcript leaves this server." : `Live mode sends transcript text to TypeSafe. Evaluation tick: ${config.interval_seconds}s. Sample replay also makes paid API calls.`;
+  $("mode").textContent = `LIVE · ${config.model}`;
+  $("notice").textContent = `Every score here is a real Jev answer. Transcript text is sent to TypeSafe on a ${config.interval_seconds}s tick whenever it changes. The sample replay makes real calls too (a fraction of a cent).`;
   const requested = new URLSearchParams(location.search).get("meeting");
   if (requested) {
     const state = await api(`/api/meetings/${encodeURIComponent(requested)}`);

@@ -1,6 +1,8 @@
-"""No-key end-to-end check: real servers, both senders, signed Recall events, SSE.
+"""End-to-end wiring check: real servers, both senders, signed Recall events, SSE.
 
-Run from a clone with `python scripts/smoke.py` after installing the package.
+Jev itself is replaced by a local stand-in (tests/fake_jev.py), so this needs no key
+and proves transport and scheduling, not classification. Run from a clone with
+`python scripts/smoke.py` after installing the package.
 """
 
 import asyncio
@@ -19,6 +21,10 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tests"))
+
+from fake_jev import FakeJev
+
 TOKEN = "synthetic-ingress-token-for-local-smoke-only"
 KEY = b"synthetic-recall-secret-for-local-smoke"
 
@@ -146,7 +152,8 @@ async def check_events(api, ingress, meeting_id, env, port):
         else:
             raise AssertionError("SSE did not report meeting closure")
     print(
-        "PASS: webhook sender, WebSocket sender, signed Recall events, deduplication, scores, SSE, shutdown"
+        "PASS: webhook sender, WebSocket sender, signed Recall events, deduplication, "
+        "scores from the local Jev stand-in, SSE, shutdown"
     )
 
 
@@ -156,14 +163,19 @@ def main():
         gateway_port = free_port()
     api = f"http://127.0.0.1:{dashboard_port}"
     ingress = f"http://127.0.0.1:{gateway_port}"
-    env = {
-        **os.environ,
-        "JEV_INGEST_TOKEN": TOKEN,
-        "RECALL_WEBHOOK_SECRET": "whsec_" + base64.b64encode(KEY).decode(),
-    }
-    env.pop("TYPESAFE_API_KEY", None)
+    with FakeJev() as jev:
+        env = {
+            **os.environ,
+            **jev.env,
+            "JEV_INGEST_TOKEN": TOKEN,
+            "RECALL_WEBHOOK_SECRET": "whsec_" + base64.b64encode(KEY).decode(),
+        }
+        run_servers(api, ingress, dashboard_port, gateway_port, env)
+
+
+def run_servers(api, ingress, dashboard_port, gateway_port, env):
     with server(
-        ["serve", "--mock", "--port", str(dashboard_port), "--interval", "0.1"],
+        ["serve", "--port", str(dashboard_port), "--interval", "0.1"],
         api + "/api/config",
         env,
     ):

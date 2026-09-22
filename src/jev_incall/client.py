@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 DEFAULT_MODEL = "jev-1.13.0"
 
 
@@ -52,10 +52,17 @@ def validate_result(result: Any, questions: dict) -> dict:
 
 
 class JevClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, transport=None):
+    def __init__(
+        self, api_key: str, model: str = DEFAULT_MODEL, transport=None, endpoint: str | None = None
+    ):
         if not api_key.strip():
-            raise ValueError("Set TYPESAFE_API_KEY or run with --mock")
+            raise ValueError(
+                "TYPESAFE_API_KEY is not set. Get a key at https://docs.typesafe.ai/ and export "
+                "it. There is no offline mode; `evaluate --dry-run` prints a request without "
+                "calling Jev."
+            )
         self.model = model
+        self.endpoint = endpoint or DEFAULT_ENDPOINT
         self.http = httpx.AsyncClient(
             timeout=httpx.Timeout(20.0),
             transport=transport,
@@ -65,7 +72,7 @@ class JevClient:
     async def evaluate(self, snapshot: dict, questions: dict) -> dict:
         try:
             response = await self.http.post(
-                ENDPOINT, json={"model": self.model, "state": snapshot, "questions": questions}
+                self.endpoint, json={"model": self.model, "state": snapshot, "questions": questions}
             )
         except httpx.RequestError as exc:
             # Do not return raw errors, request bodies, or credentials to browsers/logs.

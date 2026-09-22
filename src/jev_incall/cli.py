@@ -8,7 +8,6 @@ from pathlib import Path
 
 from .client import DEFAULT_MODEL, EvaluationError, JevClient
 from .cost import estimate
-from .demo import DemoEvaluator
 from .engine import Meeting
 from .models import Snapshot, Turn
 from .questions import FRAMEWORKS, load_questions
@@ -22,10 +21,10 @@ def positive(value):
 
 
 def evaluator(args):
-    return (
-        DemoEvaluator()
-        if args.mock
-        else JevClient(os.environ.get("TYPESAFE_API_KEY", ""), args.model)
+    return JevClient(
+        os.environ.get("TYPESAFE_API_KEY", ""),
+        args.model,
+        endpoint=os.environ.get("TYPESAFE_API_URL") or None,
     )
 
 
@@ -100,16 +99,15 @@ def main():
     serve.add_argument("--interval", type=positive, default=2.0)
     once = sub.add_parser("evaluate", help="Evaluate one complete transcript snapshot")
     once.add_argument("snapshot", type=Path)
-    once.add_argument("--dry-run", action="store_true")
+    once.add_argument(
+        "--dry-run", action="store_true", help="Print the exact request; no key, no network"
+    )
     play = sub.add_parser("replay", help="Feed JSONL transcript events into the live loop")
     play.add_argument("input", type=Path)
     play.add_argument("--interval", type=positive, default=2.0)
     play.add_argument("--turn-delay", type=positive, default=1.0)
     play.add_argument("--finish-timeout", type=positive, default=90.0)
     for cmd in (serve, once, play):
-        cmd.add_argument(
-            "--mock", action="store_true", help="Scripted fixtures, no API key or network"
-        )
         cmd.add_argument("--model", default=os.environ.get("JEV_MODEL", DEFAULT_MODEL))
     for cmd in (once, play):
         cmd.add_argument("--framework", choices=FRAMEWORKS, default="meddpicc")
@@ -144,7 +142,7 @@ def main():
             from .server import create_app
 
             uvicorn.run(
-                create_app(evaluator(args), args.interval, args.mock),
+                create_app(evaluator(args), args.interval),
                 host="127.0.0.1",
                 port=args.port,
             )

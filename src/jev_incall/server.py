@@ -11,13 +11,13 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
-from .demo import demo_turns
 from .engine import Meeting
 from .models import CreateMeeting, Turn
 from .questions import FRAMEWORKS, load_questions
+from .sample import sample_turns
 
 
-def create_app(evaluator, interval=2.0, mock=False):
+def create_app(evaluator, interval=2.0):
     if not math.isfinite(interval) or interval <= 0:
         raise ValueError("interval must be positive")
     meetings: dict[str, Meeting] = {}
@@ -29,7 +29,7 @@ def create_app(evaluator, interval=2.0, mock=False):
             await meeting.close()
         await evaluator.aclose()
 
-    app = FastAPI(title="Jev in-call assistance", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Jev in-call assistance", version="0.2.0", lifespan=lifespan)
     app.state.meetings = meetings
 
     @app.middleware("http")
@@ -83,20 +83,21 @@ def create_app(evaluator, interval=2.0, mock=False):
     @app.get("/api/config")
     async def config():
         return {
-            "mock": mock,
             "interval_seconds": interval,
             "frameworks": FRAMEWORKS,
             "model": evaluator.model,
         }
 
-    @app.get("/api/demo")
-    async def demo():
-        return demo_turns()
+    @app.get("/api/sample-call")
+    async def sample_call():
+        return sample_turns()
 
     @app.post("/api/meetings", status_code=201)
     async def create(body: CreateMeeting):
         if len(meetings) >= 16:
-            raise HTTPException(429, "Close a meeting first; this demo allows 16 active meetings")
+            raise HTTPException(
+                429, "Close a meeting first; this reference server allows 16 active meetings"
+            )
         meeting_id = str(uuid.uuid4())
         meeting = Meeting(
             meeting_id,

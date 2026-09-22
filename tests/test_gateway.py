@@ -9,9 +9,9 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from jev_incall.demo import demo_turns
 from jev_incall.gateway import create_gateway, local_api_url, recall_turn
 from jev_incall.meet import bot_request
+from jev_incall.sample import sample_turns
 
 TOKEN = "integration-test-token-32-characters-long"
 KEY = b"synthetic-recall-key-for-tests-only"
@@ -35,7 +35,9 @@ def event(meeting_id="meeting"):
         "event": "transcript.data",
         "data": {
             "data": {
-                "words": [{"text": demo_turns()[0]["text"], "start_timestamp": {"relative": 1.25}}],
+                "words": [
+                    {"text": sample_turns()[0]["text"], "start_timestamp": {"relative": 1.25}}
+                ],
                 "participant": {"id": 101, "name": "Sample Buyer"},
             },
             "transcript": {"id": "sample-transcript"},
@@ -65,10 +67,10 @@ def gateway():
 
 def test_generic_webhook_and_auth(gateway):
     c, sent = gateway
-    assert c.post("/webhooks/transcript", json=demo_turns()[0]).status_code == 401
+    assert c.post("/webhooks/transcript", json=sample_turns()[0]).status_code == 401
     auth = {"Authorization": f"Bearer {TOKEN}"}
     assert c.post("/webhooks/transcript", json={"bad": True}, headers=auth).status_code == 422
-    result = c.post("/webhooks/transcript", json=demo_turns()[0], headers=auth)
+    result = c.post("/webhooks/transcript", json=sample_turns()[0], headers=auth)
     assert result.status_code == 200 and result.json()["type"] == "ack"
     assert sent[0]["turn_id"] == "t001"
     assert c.get("/api/meetings").status_code == 404
@@ -84,7 +86,7 @@ def test_websocket_validates_before_accept_and_acknowledges(gateway):
     with c.websocket_connect("/stream", headers={"Authorization": f"Bearer {TOKEN}"}) as ws:
         ws.send_text("not json")
         assert ws.receive_json()["status"] == 422
-        ws.send_json(demo_turns()[0])
+        ws.send_json(sample_turns()[0])
         assert ws.receive_json()["turn_id"] == "t001"
     assert len(sent) == 1
 
@@ -149,7 +151,7 @@ def test_unavailable_target_is_not_acknowledged():
         assert (
             c.post(
                 "/webhooks/transcript",
-                json=demo_turns()[0],
+                json=sample_turns()[0],
                 headers={"Authorization": f"Bearer {TOKEN}"},
             ).status_code
             == 503

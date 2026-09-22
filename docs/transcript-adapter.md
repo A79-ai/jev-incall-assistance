@@ -4,7 +4,7 @@ For complete runnable integrations, see the [webhook/WebSocket quick start](stre
 
 Use any speech-to-text provider that supplies finalized text and speaker information. The adapter translates its events into the `Turn` schema; the repo does not depend on a particular audio SDK.
 
-Start `jev-incall serve --mock` for integration development or `jev-incall serve` for real classification. On macOS/Linux:
+Start `jev-incall serve` with `TYPESAFE_API_KEY` exported. Every accepted turn leads to a real Jev evaluation on the next tick. On macOS/Linux:
 
 ```bash
 MEETING_ID=$(curl --fail --silent http://127.0.0.1:8000/api/meetings \
